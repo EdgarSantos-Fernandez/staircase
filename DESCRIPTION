@@ -1,0 +1,17 @@
+Package: staircase
+Type: Package
+Title: (STA)tistical (I)tem (R)esponse models for (C)itizen (S)cience in (E)cology
+Version: 0.0.1
+Author: Edgar Santos-Fernandez
+Maintainer: Edgar Santos-Fernandez <edgar.santosfdez@gmail.com>
+Description: The package fits item response models to citizen science ecological data. It accounts for spatial dependence in the difficulties. 
+Imports:
+    dplyr,
+	plyr,
+	rgeos,
+	dismo,
+    rstan
+License: GPL-2
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.1.1
