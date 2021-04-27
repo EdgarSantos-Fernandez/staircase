@@ -10,19 +10,19 @@ devtools::install_github("https://github.com/EdgarSantos-Fernandez/staircase")
 # Usage
 library("staircase")
 
-fit <- ir_spat(formula = site ~ -1 + Moving + Babies, # covariates affecting the difficulty 
-               data = data, # a data frame
-               spat_model = 'exp', # spatial covariance matrix 
-               itemtype = '1PLUS', # item response model 
-               abil = 'user', # participants ids
-               diff = 'id', # item id
-               y = 'correct', # binary response variable 
-               coords = c("LocationX", "LocationY"), # coordinates
-               iter = 8000, 
-               warmup = 4000,
-               chains = 3,
-               refresh = 100,
-               seed = seed 
+fit <- ir_spat(formula = site ~ -1 + Moving + Babies, # covariates affecting the difficulty    
+               data = data, # a data frame   
+               spat_model = 'exp', # spatial covariance matrix    
+               itemtype = '1PLUS', # item response model    
+               abil = 'user', # participants ids   
+               diff = 'id', # item id   
+               y = 'correct', # binary response variable    
+               coords = c("LocationX", "LocationY"), # coordinates   
+               iter = 8000,    
+               warmup = 4000,   
+               chains = 3,   
+               refresh = 100,   
+               seed = seed    
 )
 
 See the complete example: https://github.com/EdgarSantos-Fernandez/hakuna/blob/main/simple_example.pdf
