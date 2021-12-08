@@ -1,0 +1,175 @@
+---
+title: "Staircase 1PLUS Model"
+author: "Edgar Santos-Fernández"
+date: "3/12/2021"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Using a 1PLUS model}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+This document outlines the fitting of a one-parameter spatial item response
+ model (1PLUS), which involves abilities and difficulties associated with the
+ species and spatial locations. However, it does not includes guessing and
+ slope parameters. See, more details on the ir_spat function help. We use a
+ exponential covariance matrix (spat_model = ‘exp’).
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+### Load Requisite Libraries
+``` {r loadlibraries, results='hide'}
+library('Rcpp')
+library('dplyr')
+library('ggplot2')
+library('rstan')
+library('bayesplot')
+library('viridis')
+library('ggrepel')
+library('RColorBrewer')
+library('coda')
+library('rgeos')
+library('dismo')
+library('ggvoronoi')
+library('staircase')
+```
+
+### Prepare data and set options
+```{r,eval=TRUE}
+diverdata <- staircase::reefdiverdata
+diverdata <- reefdiverdata
+
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+
+seed <- 202105
+set.seed(seed)
+```
+
+### Trim dataset
+``` {r, eval=TRUE, results='hide'}
+diverdata <- diverdata[diverdata$siteID %in% names(table(diverdata$siteID)[(table(diverdata$siteID) > 100) ]),]
+diverdata <- diverdata[diverdata$userID %in% names(table(diverdata$userID)[(table(diverdata$userID) > 30) ]),]
+diverdata <- diverdata[diverdata$userID %in% unique(diverdata$userID)[1:30],]
+
+images <- sort(table(diverdata$siteID), decreasing = T)
+images <- names(images[images < 31])
+diverdata <- diverdata[diverdata$siteID %in% images,]
+``` 
+
+### Create unique user IDs and site IDs
+``` {r, eval=FALSE}
+diverdata$siteID <- as.numeric(factor(diverdata$siteID))
+diverdata$userID <- as.numeric(factor(diverdata$userID))
+```
+
+### Examine the observation rate of the users in the smaller dataset
+This smaller dataset features 77 images and 13 users' classifications.
+```{r}
+ggplot(diverdata) + 
+  geom_raster(aes(y= siteID, x = userID)) + 
+  ylab('Site ID') +
+  xlab('User ID') +
+  theme_bw()
+```
+
+### Run model
+Then using the function ir_spat, we fit a one-parameter spatial item response 
+model (1PLUS), which involves abilities and difficulties associated with the 
+species and spatial locations. However, it does not includes guessing and 
+slope parameters.
+
+The number of iterations used in this example is small. A more
+accurate output could be obtained by increasing the number of iterations.
+However, this will significantly increase the run time of this code.
+
+To reduce waiting time for data, the output of this code segment can be accessed by using 
+``` {r, eval=FALSE, results='hide'}
+load("example_1PLUS_fit.rda").
+```
+Note: If the following code is run on a computer with a single core, or a computer than
+cannot use parallel operations the code will take significantly longer to run.
+``` {r, eval=FALSE, results='hide'}
+fit <- ir_spat(formula = siteID ~ -1 + hard_bin, # covariates affecting the difficulty
+               diverdata = diverdata, # a data frame
+               spat_model = 'exp', # spatial covariance matrix
+               itemtype = '1PLUS', # item response model
+               abil = 'userID', # participants ids
+               diff = 'siteID', # location id
+               y = 'correct', # binary response variable
+               coords = c("lon", "lat"), # coordinates
+               iter = 400,
+               warmup = 200, 
+               chains = 3,
+               refresh = 100,
+               seed = seed
+)
+```
+
+
+### Computing Summary Statistics
+```{r, eval=TRUE}
+load("example_1PLUS_fit.rda")
+fit <- example_1PLUS_fit
+stats <- summary(fit)
+stats <- stats$summary
+array <- as.array(fit)
+```
+
+
+### Comparing and evaluating participants abilities
+``` {r}
+abils <- stats[grep('abil\\[', rownames(stats)),]
+abils <- cbind(abils, diverdata %>% group_by(userID) %>% summarize(ns = n(), prop = mean(correct)) %>% data())
+names(abils)[grep('%', names(abils))] <- c('q2.5','q25', 'q50', 'q75', 'q97.5')
+ggplot(abils, aes(x= prop, y = mean)) + geom_point() +
+  geom_text_repel(aes(x= prop, y = mean, label = userID), size = 2.5) +
+  xlab('Proportion of correct classification')+
+  ylab('Abilities')
+```
+
+### Plotting the relative difficulty of each site
+``` {r}
+diff <- stats[grep('difficulty\\[', rownames(stats)),]
+diff <- cbind(diff, diverdata %>% group_by(siteID, lon, lat) %>% summarize(ns = n(), prop = mean(correct)) %>% data.frame())
+diff$diff_cat <- cut(diff$mean, breaks = c(-10,quantile(diff$mean)[2:4],10), 1:4, include.lowest = T)
+cols = brewer.pal(5,'Reds')
+ggplot(diff , aes(lon, lat, fill = diff_cat)) +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  stat_voronoi(color="black") + scale_fill_manual(values=cols) +
+  geom_point() +
+  geom_text(aes(lon, lat, label = siteID), size = 2)+
+  coord_fixed(ratio=1)+
+  labs(fill = "Site difficulty")+
+  theme_bw()
+```
+
+### Plotting the estimated species difficulties
+``` {r}
+species <- stats[grep('species\\[', rownames(stats)),]
+species <- cbind(species, diverdata %>% group_by(True_Species) %>% summarize(ns = n(), prop = mean(correct)) %>% data.frame())
+names(species)[grep('%', names(species))] <- c('q2.5','q25', 'q50', 'q75', 'q97.5')
+ggplot(species, aes(x= prop, y = mean)) +
+  geom_point() +
+  geom_errorbar(aes(ymin=q2.5, ymax=q97.5))+
+  xlab('Proportion of correct classification')+
+  ylab('Species difficulty')
+```
+
+### Posterior distributions of the regression coefficients
+``` {r}
+mcmc_dens_overlay(
+  array,
+  pars = c(
+    "beta[1]"),
+  facet_args = list(nrow = 1)
+)
+
+```
+
+
