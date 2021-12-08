@@ -1,16 +1,18 @@
 
-#' A simple modeling function using a formula and data
+#' Rearranges a data frame into a formula style arrangement
 #'
-#' @param formula A formula as in lm()
+#' @param formula A formula as in lm() e.g. Y ~ X1 + X2
 #' @param data A data.frame containing the elements specified in the formula
-#' @return A list of matrices
+#' @return A list of 2 matrices, the first is the response variable defined in
+#' the formula parameter. The second is a list containing all the other
+#' variables defined in the formula parameter.
 #' @importFrom stats model.matrix model.response
 #' @export
 #' @author Jay ver Hoef
 #' @examples
 #' #options(na.action='na.pass')
 #' #out_list = mylm(formula = y ~ X1 + X2 + X3, data = data)
-#'
+
 
 mylm <- function(formula, data) {
   # get response as a vector
@@ -28,8 +30,34 @@ mylm <- function(formula, data) {
 }
 
 
-# A simple modeling function using a formula and data
-# by Mitzi Morris
+
+#' A function that finds the neighbours of each point in the vornoi graph.
+#'
+#' @param adjBUGS a list of region ids for the adjacent regions
+#' @param numBUGS a list of the number of neighbours for each region
+#' @return a list containing parameters required by the stan model.
+#' @author Mitzi Morris
+#' @examples
+#' nb2 <- voronoi(matrix(c(data$lon, data$lat), ncol=2))
+#'
+#' #https://gis.stackexchange.com/questions/237810/adjacency-matrix-not-including-vertices
+#' polyids = seq_along(nb2)
+#' adjMat = matrix(FALSE, ncol = length(nb2), nrow = length(nb2))
+#'
+#' for (ii in polyids) {
+#'   for (jj in setdiff(polyids, seq_len(ii))) {
+#'     adjMat[ii, jj] =
+#'       ifelse(class(gIntersection(nb2[ii, ], nb2[jj, ])) == 'SpatialLines',1,0)
+#'   }
+#' }
+#'
+#' #use symmetry for the other half
+#' adjMat[lower.tri(adjMat)] = t(adjMat)[lower.tri(adjMat)]
+#'
+#' num <- apply(W,1,sum)
+#' adj <- c(unlist(apply(W,1,function(x) which(x == 1) ) ))
+#' munged_data <- mungeCARdata4stan(adjBUGS = adj,numBUGS = num)
+
 
 mungeCARdata4stan = function(adjBUGS,numBUGS) {
   N = length(numBUGS);
@@ -54,27 +82,40 @@ mungeCARdata4stan = function(adjBUGS,numBUGS) {
 
 
 
-#' Fits an spatial item response model using Stan
-#' It requires
-#' It requires
-#' Missing values are not allowed in the response/covariates.
+#' Fits a spatial item response model using Stan
 #'
-#' @param formula A formula as in lm()
-#' @param data A long data frame containing the locations, dates, covariates and the response variable. It has to have the locID and date. No missing values are allowed in the covariates.
-#' @param spat_model A string with the spatial correlation structure based on Euclidean distance models. The options are: exponential (exp), spherical (sph), gaussian (gau), car (Conditional Autoregressive). For no spatial autocorrelation use "none".
-#' @param itemtype A string with the kind of item response model. Options: 3PLUS, 2PLUS, 1PLUS, 3PL, 2PL and 1PL. PLUS and PL models are spatial and non-spatial respectivelly.
-#' @param abil A column indicating the user id
-#' @param diff A column indicating the item id
-#' @param y binary response variable (1 = correct, 0 = otherwise).
-#' @param coords A vector with the lon and lat for Euclidean distance models.
+#' @param formula Formula in the form of a linear model (see ?lm())
+#' @param data Long data frame containing the locations, dates, covariates and the response variable. It has to have the locID and date. No missing values are allowed in the covariates.
+#' @param spat_model String with the spatial correlation structure based on Euclidean distance models. The options are: exponential (exp), spherical (sph), gaussian (gau), car (Conditional Autoregressive). For no spatial autocorrelation use "none".
+#' @param itemtype String with the kind of item response model. Options: 3PLUS, 2PLUS, 1PLUS, 3PL, 2PL and 1PL. PLUS and PL models are spatial and non-spatial respectivelly.
+#' @param abil Column indicating the user id
+#' @param diff Column indicating the item id
+#' @param y Binary response variable (1 = correct, 0 = otherwise).
+#' @param coords A vector with the longitude and latitude for Euclidean distance models.
 #' @param iter Number of iterations
-#' @param warmup Warm up samples
+#' @param warmup The number of warm up sample iterations that are performed
 #' @param chains Number of chains
 #' @param seed (optional) A seed for reproducibility
-#' @param loglik If the log-likelihood will be computed
+#' @param loglik If the log-likelihood will be computed (True/False)
 #' @param refresh The refresh rate showing the progress
-#' @return A list with the model fit
-#' @details Missing values are not allowed in the covariates and they must be imputed before using ir_spat(). Many options can be found in https://cran.r-project.org/web/views/MissingData.html
+#' @return Returns a list with the model fit.
+#' @details Missing values are not allowed in the covariates and they must be
+#' imputed before using ir_spat(). Many options can be found in
+#' https://cran.r-project.org/web/views/MissingData.html.\cr\cr The probability
+#' that a user correctly identified a point is specified by the equation:\cr\cr
+#' \figure{probability.png}{options: align="middle"}\cr\cr
+#' The model above indicates the probability (p_ijk) that a user (i) identifies
+#' annotation (j) in image (k) correctly. Wher: \cr
+#'    θ_i is the latent ability of the user i (larger θ indicates a larger
+#'    probability of identifying the item). \cr
+#'    η_j is the pseudoguessing for image j. This accounts for the chance of
+#'    the user correctly identifying the item through guessing.
+#'    b_j is the difficulty of the image j.
+#'    α_j represents the slope or discrimination parameter of image j. This
+#'    indicates how quickly the function will go from 0 to 1.
+#' \cr The item type parameter
+#'  in the ir_spat function can receive any of the Models in the first column:\cr
+#'  \cr\figure{modelCoef.png}{options: align="middle"}
 #' @export
 #' @importFrom dplyr mutate %>% distinct left_join case_when
 #' @importFrom plyr .
@@ -93,15 +134,13 @@ mungeCARdata4stan = function(adjBUGS,numBUGS) {
 #'#                    refresh = 100
 #'#                    )
 
-
-
-ir_spat <- function(formula = formula,
-                    data = data,
+ir_spat <- function(formula,
+                    data,
                     spat_model = 'exp',
                     itemtype = '3PLUS',
                     abil = 'user',
                     diff = 'id',
-                    y = y,
+                    y,
                     coords = coords,
                     iter = 4000,
                     warmup = 2000,
@@ -113,8 +152,18 @@ ir_spat <- function(formula = formula,
   # @param slope A string with the column associated with the slope parameter e.g.
   # @param guess A string with the column associated with the guessing parameter e.g.
 
+  ##############################################################################
+  # Verify there is no missing data
+
+  `%notin%` <- Negate(`%in%`)
+
+  annot <- simplify2array(data[,abil, drop=TRUE])
+  id <- simplify2array(data[,diff, drop=TRUE])
+  data$annotNum <- simplify2array(data[,abil, drop=TRUE])
+  data$id <- simplify2array(data[,diff, drop=TRUE])
 
   lon <- lat <- NULL
+
   if(missing(y)){
     stop('Need to define the binary response variable y')
   }
@@ -136,30 +185,48 @@ ir_spat <- function(formula = formula,
           Other options are: 2PLUS, 1PLUS, 3PL, 2PL and 1PL')
   }
 
+
   # Cov
   if(spat_model == 'none' &
      (itemtype == '1PLUS'| itemtype == '2PLUS' | itemtype == '3PLUS') ) stop("Cannot use spat_model == none with itemtype = 1PLUS, 2PLUS or 3PLUS. Use itemtype = 1PL, 2PL or 3PL")
 
+  # if (spat_model == 'none' & itemtype %in% c('1PLUS','2PLUS','3PLUS')){
+  #   stop("Cannot use spat_model == none with itemtype = 1PLUS, 2PLUS
+  #        or 3PLUS. Use itemtype = 1PL, 2PL or 3PL")
+  # }
+
+
   if((spat_model == 'exp' | spat_model ==  'car') &
-     (itemtype == '1PL'| itemtype == '2PL' | itemtype == '3PL') ) stop("Cannot use spat_model == exp|car with itemtype = 1PL, 2PL or 3PL. Use itemtype = 1PLUS, 2PLUS or 3PLUS")
+     (itemtype == '1PL'| itemtype == '2PL' | itemtype == '3PL')){
+    stop("Cannot use spat_model == exp|car with itemtype = 1PL, 2PL or 3PL.
+         Use itemtype = 1PLUS, 2PLUS or 3PLUS")
+  }
+
+  # if (spat_model %in% c('exp', 'car') & itemtype %in% c('1PL','2PL','3PL')){
+  #   stop("Cannot use spat_model == exp|car with itemtype =
+  #        1PL, 2PL or 3PL. Use itemtype = 1PLUS, 2PLUS or 3PLUS")
+  # }
 
   if(missing(abil)){
-    stop("Need to define the column containg the used id used to compute the ability")
+    stop("Need to define the column containg the user id used to compute the ability")
   }
 
   if(missing(diff)){
     stop("Need to define the column containg the image/item id used to compute the difficulty")
   }
 
-  if(missing(seed)) seed <- sample(1:1E6,1,replace=T)
+  if(missing(seed)){
+    seed <- sample(1:1E6,1,replace=T)
+  }
 
-  if(missing(coords)){ stop("Please, specify the columns in the data frame with
-                                     the latitude and longitude (c('lon', 'lat'))") }
+  if(missing(coords)){
+    stop("Please, specify the columns in the data frame with
+          the latitude and longitude (c('lon', 'lat'))")
+  }
 
-  data$lon <- data[,names(data) == coords[1]]
-  data$lat <- data[,names(data) == coords[2]]
-
-
+  data$lon <- data[,names(data) == coords[1], drop=TRUE]
+  data$lat <- data[,names(data) == coords[2], drop=TRUE]
+  data$siteID <- data[,names(data) == diff, drop=TRUE]
 
   if(missing(formula)){
     covariates <- 'no_cov'
@@ -169,16 +236,38 @@ ir_spat <- function(formula = formula,
     covariates <- 'use_cov'
   }
 
+  ##############################################################################
+  # Ensure data is in correct format
 
-# PARAMETERS
-annot <- data[,abil]
-id <- data[,diff]
+  if (length(unique(data$id)) != max(unique(data$id))){
+    warning("The site ID's contain a site ID greater than the unique number of
+            ID's in the data. The data will be restructured so that the site
+            ID's are in sequence")
+
+    # Find the ID's which are missing from data
+    missingIDs <- which(unique(data$id) %notin% (1:length(unique(data$id))))
+
+    # Squish the ID's down to make them into a sequence
+    for (ID in rev(missingIDs)){
+      data$id <- data$id - (data$id > ID)
+    }
+  }
+
+  ## Check that there are no different site ID's with same lat/long
+
+  if (nrow(unique(data[c("lon","lat")])) != nrow(unique(data[c("lon","lat","siteID")]))){
+    stop("There is a mismatch between the number of sites and the unique
+          longitude/latitude combinations")
+  }
+
+  ##############################################################################
+  # Extract parameters in correct form
 
 
-#  model <- 'exp'
-#  sph
-#  gau
-#  car
+  #  model <- 'exp'
+  #  sph
+  #  gau
+  #  car
 
 
   cor_ed <- case_when(spat_model == "exp" ~ 1,
@@ -405,7 +494,7 @@ id <- data[,diff]
     }
   }'
 
-  if(cor_ed %in% 1:3) print('Fitting an Euclidean distance model (cor_ed)')
+  if(cor_ed %in% 1:3) print('Fitting a Euclidean distance model (cor_ed)')
   if(cor_car %in% 1:3) print('Fitting a CAR model (cor_car)')
   if(spat_model == 'none') print('Fitting a no spatial model (no_spat)')
 
@@ -451,8 +540,6 @@ id <- data[,diff]
   # see model in notepad++. replace \n by @. then replace back @ by \r\n and tick Extend()
 
 
-  `%notin%` <- Negate(`%in%`)
-
   pars <- c(
     case_when(cor_ed %in% 1:3 ~ c('var_ed',
                                   'alpha_ed',
@@ -490,33 +577,41 @@ id <- data[,diff]
     X <- matrix(1, nrow(data), 1)
   }
 
+  # Total amount of locations
+  M <- length(unique(id))
 
-  M <- length(unique(data$id)) # locations
-
+  # Convert the true classifications into numeric factors
   data$True_Species_num <- as.numeric(as.factor(data$True_Species))
 
 
   # spatial elements
   # Euclidean distance
-  e <- data %>%
-    dplyr::select(lon, lat) %>% distinct() %>%
+  e <- data[c("lon", "lat", "id")] %>% distinct() %>%
     dist(., method = "euclidean", diag = FALSE, upper = FALSE) %>% as.matrix()
 
   # Car prior
   # adjacency matrix
-  nb2 <- voronoi(data[,c('lon','lat')])
+
+  # Simplify2aray converts tibbles to arrays and arrays to arrays
+
+
+  # Remove tibbles and other data types (excessive calls to simplify2array()
+  # does not cause any issues)
+  nb2 <- voronoi(matrix(c(data$lon, data$lat), ncol=2))
+
   #https://gis.stackexchange.com/questions/237810/adjacency-matrix-not-including-vertices
   polyids = seq_along(nb2)
   adjMat = matrix(FALSE, ncol = length(nb2), nrow = length(nb2))
+
   for (ii in polyids) {
     for (jj in setdiff(polyids, seq_len(ii))) {
       adjMat[ii, jj] =
         ifelse(class(gIntersection(nb2[ii, ], nb2[jj, ])) == 'SpatialLines',1,0)
     }
   }
+
   #use symmetry for the other half
   adjMat[lower.tri(adjMat)] = t(adjMat)[lower.tri(adjMat)]
-
   W <- adjMat
 
   num <- apply(W,1,sum)
@@ -526,24 +621,19 @@ id <- data[,diff]
   node2 = munged_data$node2
   N_edges = munged_data$N_edges
 
-
-
   #if(!is.null(slope) ) slope <- data[,slope]
   #if(!is.null(slope) ) guessing <- data[,guessing]
   Nspecies <- length(unique(data$True_Species_num))
-
-
   data_list <- list(N = nrow(data), # total numb of anotations
                M = M, # numb sites
-               Nindiv = length(unique(data$user)), # numb users
+               Nindiv = length(unique(data$annotNum)), # numb users
                K = ncol(X), # number of covariates + intercept
-               id = id, # image id
-               annot = annot, # users id
+               id = data$id, # image id
+               annot = data$annotNum, # users id
                X = X, # design matrix of covariates
-               y = data$correct,
+               y = data[,"correct" ,drop=TRUE],
                Nspecies = Nspecies,
                species_id = data$True_Species_num,
-
                #car part
                W = W,
                #N_edges= N_edges,
@@ -551,7 +641,7 @@ id <- data[,diff]
                #node2 = node2,
                # Euc distance part
                e = e,
-               I = diag(1, length(unique(data$SiteID)), length(unique(data$SiteID))),
+               I = diag(1, length(unique(data$id)), length(unique(data$id))),
                alpha_max = 4 * max(e)
   )
 
@@ -561,7 +651,6 @@ id <- data[,diff]
   ini <- function(){list(alpha = rep(1, M),
                          eta = rep(0.1, Nspecies)
   )}
-
 
 
   fit <- rstan::stan(model_code = ir_model,

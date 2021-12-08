@@ -2,19 +2,16 @@
 % Please edit documentation in R/functions.R
 \name{ir_spat}
 \alias{ir_spat}
-\title{Fits an spatial item response model using Stan
-It requires
-It requires
-Missing values are not allowed in the response/covariates.}
+\title{Fits a spatial item response model using Stan}
 \usage{
 ir_spat(
-  formula = formula,
-  data = data,
+  formula,
+  data,
   spat_model = "exp",
   itemtype = "3PLUS",
   abil = "user",
   diff = "id",
-  y = y,
+  y,
   coords = coords,
   iter = 4000,
   warmup = 2000,
@@ -25,25 +22,25 @@ ir_spat(
 )
 }
 \arguments{
-\item{formula}{A formula as in lm()}
+\item{formula}{Formula in the form of a linear model (see ?lm())}
 
-\item{data}{A long data frame containing the locations, dates, covariates and the response variable. It has to have the locID and date. No missing values are allowed in the covariates.}
+\item{data}{Long data frame containing the locations, dates, covariates and the response variable. It has to have the locID and date. No missing values are allowed in the covariates.}
 
-\item{spat_model}{A string with the spatial correlation structure based on Euclidean distance models. The options are: exponential (exp), spherical (sph), gaussian (gau), car (Conditional Autoregressive). For no spatial autocorrelation use "none".}
+\item{spat_model}{String with the spatial correlation structure based on Euclidean distance models. The options are: exponential (exp), spherical (sph), gaussian (gau), car (Conditional Autoregressive). For no spatial autocorrelation use "none".}
 
-\item{itemtype}{A string with the kind of item response model. Options: 3PLUS, 2PLUS, 1PLUS, 3PL, 2PL and 1PL. PLUS and PL models are spatial and non-spatial respectivelly.}
+\item{itemtype}{String with the kind of item response model. Options: 3PLUS, 2PLUS, 1PLUS, 3PL, 2PL and 1PL. PLUS and PL models are spatial and non-spatial respectivelly.}
 
-\item{abil}{A column indicating the user id}
+\item{abil}{Column indicating the user id}
 
-\item{diff}{A column indicating the item id}
+\item{diff}{Column indicating the item id}
 
-\item{y}{binary response variable (1 = correct, 0 = otherwise).}
+\item{y}{Binary response variable (1 = correct, 0 = otherwise).}
 
-\item{coords}{A vector with the lon and lat for Euclidean distance models.}
+\item{coords}{A vector with the longitude and latitude for Euclidean distance models.}
 
 \item{iter}{Number of iterations}
 
-\item{warmup}{Warm up samples}
+\item{warmup}{The number of warm up sample iterations that are performed}
 
 \item{chains}{Number of chains}
 
@@ -51,19 +48,22 @@ ir_spat(
 
 \item{refresh}{The refresh rate showing the progress}
 
-\item{loglik}{If the log-likelihood will be computed}
+\item{loglik}{If the log-likelihood will be computed (True/False)}
 }
 \value{
-A list with the model fit
+Returns a list with the model fit.
 }
 \description{
-Fits an spatial item response model using Stan
-It requires
-It requires
-Missing values are not allowed in the response/covariates.
+Fits a spatial item response model using Stan
 }
 \details{
-Missing values are not allowed in the covariates and they must be imputed before using ir_spat(). Many options can be found in https://cran.r-project.org/web/views/MissingData.html
+Missing values are not allowed in the covariates and they must be
+imputed before using ir_spat(). Many options can be found in
+https://cran.r-project.org/web/views/MissingData.html.\cr\cr The probability
+that a user correctly identified a point is specified by the equation:\cr\cr
+\figure{probability.png}{options: align="middle"}\cr\cr The item type parameter
+ in the ir_spat function can receive any of the Models in the first column:\cr
+ \cr\figure{modelCoef.png}{options: align="middle"}
 }
 \examples{
 # ir_spat(formula = site ~ -1 + Standing + Resting + Moving + Eating + Interacting + Babies,

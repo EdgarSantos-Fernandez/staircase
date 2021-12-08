@@ -1,17 +1,24 @@
 Package: staircase
-Type: Package
-Title: (STA)tistical (I)tem (R)esponse models for (C)itizen (S)cience in (E)cology
 Version: 0.0.1
-Author: Edgar Santos-Fernandez
-Maintainer: Edgar Santos-Fernandez <edgar.santosfdez@gmail.com>
-Description: The package fits item response models to citizen science ecological data. It accounts for spatial dependence in the difficulties. 
-Imports:
-    dplyr,
-	plyr,
-	rgeos,
-	dismo,
-    rstan
-License: GPL-2
-Encoding: UTF-8
+Title: (STA)tistical (I)tem (R)esponse models for (C)itizen (S)cience in (E)cology
+Description: The package fits item response models to citizen science ecological
+  data. It accounts for spatial dependence in the difficulties. The functions 
+  in this packages are utilised in this paper:\cr\cr
+  Santos-Fernández, Edgar & Mengersen, Kerrie. (2020). Bayesian item response models for citizen science ecological data. 10.13140/RG.2.2.35569.63847. 
+Authors@R: c(
+    person("Edgar", "Santos-Fernández", "edgar.santosfernandez@qut.edu.au", "aut"
+    ))
+Depends: R (>= 3.5)
+Imports: dplyr,	plyr,	rgeos, dismo, rstan, knitr
+Enhances: sp
+License: MIT + file LICENSE
+URL: https://github.com/EdgarSantos-Fernandez/staircase,
 LazyData: true
-RoxygenNote: 7.1.1
+VignetteBuilder: knitr
+RoxygenNote: 7.1.2
+Encoding: UTF-8
+NeedsCompilation: no
+Packaged: 2021-06-24 12:25:35 UTC
+Author: Edgar Santos-Fernández [aut]
+Maintainer: Edgar Santos-Fernández <edgar.santosfernandez@qut.edu.au>
+Repository: CRAN
