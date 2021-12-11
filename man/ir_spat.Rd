@@ -61,7 +61,17 @@ Missing values are not allowed in the covariates and they must be
 imputed before using ir_spat(). Many options can be found in
 https://cran.r-project.org/web/views/MissingData.html.\cr\cr The probability
 that a user correctly identified a point is specified by the equation:\cr\cr
-\figure{probability.png}{options: align="middle"}\cr\cr The item type parameter
+\figure{probability.png}{options: align="middle"}\cr\cr
+The model above indicates the probability (p_ijk) that a user (i) identifies
+annotation (j) in image (k) correctly. Wher: \cr
+   θ_i is the latent ability of the user i (larger θ indicates a larger
+   probability of identifying the item). \cr
+   η_j is the pseudoguessing for image j. This accounts for the chance of
+   the user correctly identifying the item through guessing.
+   b_j is the difficulty of the image j.
+   α_j represents the slope or discrimination parameter of image j. This
+   indicates how quickly the function will go from 0 to 1.
+\cr The item type parameter
  in the ir_spat function can receive any of the Models in the first column:\cr
  \cr\figure{modelCoef.png}{options: align="middle"}
 }

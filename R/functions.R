@@ -38,6 +38,7 @@ mylm <- function(formula, data) {
 #' @return a list containing parameters required by the stan model.
 #' @author Mitzi Morris
 #' @examples
+#' \dontrun{
 #' nb2 <- voronoi(matrix(c(data$lon, data$lat), ncol=2))
 #'
 #' #https://gis.stackexchange.com/questions/237810/adjacency-matrix-not-including-vertices
@@ -57,6 +58,7 @@ mylm <- function(formula, data) {
 #' num <- apply(W,1,sum)
 #' adj <- c(unlist(apply(W,1,function(x) which(x == 1) ) ))
 #' munged_data <- mungeCARdata4stan(adjBUGS = adj,numBUGS = num)
+#' }
 
 
 mungeCARdata4stan = function(adjBUGS,numBUGS) {
@@ -154,7 +156,6 @@ ir_spat <- function(formula,
 
   ##############################################################################
   # Verify there is no missing data
-
   `%notin%` <- Negate(`%in%`)
 
   annot <- simplify2array(data[,abil, drop=TRUE])
@@ -168,9 +169,7 @@ ir_spat <- function(formula,
     stop('Need to define the binary response variable y')
   }
 
-  if(!missing(y)){
-    data$correct <- data[,names(data) == y]
-  }
+  data$correct <- simplify2array(data[,y, drop=TRUE])
 
   # checks
   if(missing(spat_model)){
@@ -620,7 +619,6 @@ ir_spat <- function(formula,
   node1 = munged_data$node1
   node2 = munged_data$node2
   N_edges = munged_data$N_edges
-
   #if(!is.null(slope) ) slope <- data[,slope]
   #if(!is.null(slope) ) guessing <- data[,guessing]
   Nspecies <- length(unique(data$True_Species_num))
@@ -631,7 +629,7 @@ ir_spat <- function(formula,
                id = data$id, # image id
                annot = data$annotNum, # users id
                X = X, # design matrix of covariates
-               y = data[,"correct" ,drop=TRUE],
+               y = data$correct,
                Nspecies = Nspecies,
                species_id = data$True_Species_num,
                #car part

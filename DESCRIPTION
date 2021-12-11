@@ -6,10 +6,12 @@ Description: The package fits item response models to citizen science ecological
   in this packages are utilised in this paper:\cr\cr
   Santos-Fernández, Edgar & Mengersen, Kerrie. (2020). Bayesian item response models for citizen science ecological data. 10.13140/RG.2.2.35569.63847. 
 Authors@R: c(
-    person("Edgar", "Santos-Fernández", "edgar.santosfernandez@qut.edu.au", "aut"
+    person("Edgar", "Santos-Fernández", , "edgar.santosfernandez@qut.edu.au", role=c("aut", "cre")
+    ), 
+    person("Alex", "McClymont", , "mcclymo2@qut.edu.au", "aut"
     ))
 Depends: R (>= 3.5)
-Imports: dplyr,	plyr,	rgeos, dismo, rstan, knitr
+Imports: dplyr,	plyr, rstan, knitr, rmarkdown, ggrepel, RColorBrewer, rgeos, dismo, ggvoronoi, bayesplot, Rcpp, ggplot2
 Enhances: sp
 License: MIT + file LICENSE
 URL: https://github.com/EdgarSantos-Fernandez/staircase,

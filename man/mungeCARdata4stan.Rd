@@ -18,6 +18,7 @@ a list containing parameters required by the stan model.
 A function that finds the neighbours of each point in the vornoi graph.
 }
 \examples{
+\dontrun{
 nb2 <- voronoi(matrix(c(data$lon, data$lat), ncol=2))
 
 #https://gis.stackexchange.com/questions/237810/adjacency-matrix-not-including-vertices
@@ -37,6 +38,7 @@ adjMat[lower.tri(adjMat)] = t(adjMat)[lower.tri(adjMat)]
 num <- apply(W,1,sum)
 adj <- c(unlist(apply(W,1,function(x) which(x == 1) ) ))
 munged_data <- mungeCARdata4stan(adjBUGS = adj,numBUGS = num)
+}
 }
 \author{
 Mitzi Morris

@@ -17,8 +17,7 @@ This document outlines the fitting of a one-parameter spatial item response
 
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 ```
 
 ### Load Requisite Libraries
@@ -28,10 +27,8 @@ library('dplyr')
 library('ggplot2')
 library('rstan')
 library('bayesplot')
-library('viridis')
 library('ggrepel')
 library('RColorBrewer')
-library('coda')
 library('rgeos')
 library('dismo')
 library('ggvoronoi')
@@ -39,12 +36,13 @@ library('staircase')
 ```
 
 ### Prepare data and set options
+NOTE: using options(mc.cores = parallel::detectCores()) is optimal.
+CRAN package vignettes limit the maximum number of cores to 2.
 ```{r,eval=TRUE}
 diverdata <- staircase::reefdiverdata
-diverdata <- reefdiverdata
 
 rstan_options(auto_write = TRUE)
-options(mc.cores = parallel::detectCores())
+options(mc.cores = 2) #options(mc.cores = parallel::detectCores()) is
 
 seed <- 202105
 set.seed(seed)
@@ -62,13 +60,13 @@ diverdata <- diverdata[diverdata$siteID %in% images,]
 ``` 
 
 ### Create unique user IDs and site IDs
-``` {r, eval=FALSE}
+``` {r, eval=TRUE}
 diverdata$siteID <- as.numeric(factor(diverdata$siteID))
 diverdata$userID <- as.numeric(factor(diverdata$userID))
 ```
 
 ### Examine the observation rate of the users in the smaller dataset
-This smaller dataset features 77 images and 13 users' classifications.
+This smaller dataset features 43 images and 13 users' classifications.
 ```{r}
 ggplot(diverdata) + 
   geom_raster(aes(y= siteID, x = userID)) + 
@@ -87,15 +85,13 @@ The number of iterations used in this example is small. A more
 accurate output could be obtained by increasing the number of iterations.
 However, this will significantly increase the run time of this code.
 
-To reduce waiting time for data, the output of this code segment can be accessed by using 
-``` {r, eval=FALSE, results='hide'}
-load("example_1PLUS_fit.rda").
-```
+This prepared sample will take about 4 minutes to run to completion.
+
 Note: If the following code is run on a computer with a single core, or a computer than
 cannot use parallel operations the code will take significantly longer to run.
-``` {r, eval=FALSE, results='hide'}
+``` {r, eval=TRUE, results='hide'}
 fit <- ir_spat(formula = siteID ~ -1 + hard_bin, # covariates affecting the difficulty
-               diverdata = diverdata, # a data frame
+               data = diverdata, # a data frame
                spat_model = 'exp', # spatial covariance matrix
                itemtype = '1PLUS', # item response model
                abil = 'userID', # participants ids
@@ -105,7 +101,7 @@ fit <- ir_spat(formula = siteID ~ -1 + hard_bin, # covariates affecting the diff
                iter = 400,
                warmup = 200, 
                chains = 3,
-               refresh = 100,
+               refresh = 5,
                seed = seed
 )
 ```
@@ -113,8 +109,6 @@ fit <- ir_spat(formula = siteID ~ -1 + hard_bin, # covariates affecting the diff
 
 ### Computing Summary Statistics
 ```{r, eval=TRUE}
-load("example_1PLUS_fit.rda")
-fit <- example_1PLUS_fit
 stats <- summary(fit)
 stats <- stats$summary
 array <- as.array(fit)
@@ -124,8 +118,9 @@ array <- as.array(fit)
 ### Comparing and evaluating participants abilities
 ``` {r}
 abils <- stats[grep('abil\\[', rownames(stats)),]
-abils <- cbind(abils, diverdata %>% group_by(userID) %>% summarize(ns = n(), prop = mean(correct)) %>% data())
+abils <- cbind(abils, diverdata %>% group_by(userID) %>% summarize(ns = n(), prop = mean(correct)) %>% data.frame())
 names(abils)[grep('%', names(abils))] <- c('q2.5','q25', 'q50', 'q75', 'q97.5')
+
 ggplot(abils, aes(x= prop, y = mean)) + geom_point() +
   geom_text_repel(aes(x= prop, y = mean, label = userID), size = 2.5) +
   xlab('Proportion of correct classification')+

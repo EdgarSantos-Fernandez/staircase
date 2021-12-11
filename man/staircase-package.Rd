@@ -16,11 +16,11 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: 
+\strong{Maintainer}: Edgar Santos-Fernández \email{edgar.santosfernandez@qut.edu.au}
 
-Other contributors:
+Authors:
 \itemize{
-  \item Edgar edgar.santosfernandez@qut.edu.au Santos-Fernández \email{aut}
+  \item Alex McClymont \email{mcclymo2@qut.edu.au}
 }
 
 }
